@@ -13,6 +13,8 @@ import TextField from 'material-ui/TextField';
 import Snackbar from 'material-ui/Snackbar';
 import SvgIcon from 'material-ui/SvgIcon';
 import Dialog from 'material-ui/Dialog';
+import * as firebase from 'firebase'
+
 import {
   Table,
   TableBody,
@@ -21,6 +23,16 @@ import {
   TableRow,
   TableRowColumn,
 } from 'material-ui/Table';
+
+const config = {
+  apiKey: "AIzaSyDc6Gy0dfk1EYIroZDut19LqQtA1J3fUM8",
+  authDomain: "auditoria-e8b99.firebaseapp.com",
+  databaseURL: "https://auditoria-e8b99.firebaseio.com",
+  projectId: "auditoria-e8b99",
+  storageBucket: "auditoria-e8b99.appspot.com",
+  messagingSenderId: "555225710531"
+};
+firebase.initializeApp(config);
 
 const styles = {
   actionButtons: {
@@ -53,7 +65,8 @@ class App extends Component {
     super();
     this.state = {
       records: [],
-      dataInputOpen: false
+      dataInputOpen: false,
+      name: 'Mauro'
     };
   }
 
@@ -86,6 +99,16 @@ class App extends Component {
     this.setState({dataInputOpen: false});
   }
 
+  componentWillMount() {
+   const nameRef = firebase.database().ref().child('object').child('name')
+   console.log(nameRef);
+   nameRef.on('value', (snapshot) => {
+    this.setState({
+     name: snapshot.val()
+    })
+   })
+  }
+
 
   render() {
     return (
@@ -107,6 +130,7 @@ class App extends Component {
             onAddRecord={this.addRecord.bind(this)}
             visible={this.state.dataInputOpen}
           />
+          <p>{this.state.name}</p>
         </div>
       </MuiThemeProvider>
     );

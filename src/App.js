@@ -109,6 +109,30 @@ class App extends Component {
    })
   }
 
+  writeUserData(name) {
+    firebase.database().ref('amixes/' + name + '/').update({
+      age: 15,
+    });
+  }
+
+  writeUserData_2() {
+   firebase.database().ref('amixes/').set({
+      Dandiv: {
+         number: 1,
+         age: 21
+      },
+      Carlos: {
+         number: 2,
+         age: 21
+      },
+      Juliana: {
+         number: 3,
+         age: 27
+      }
+   });
+  }
+
+// firebase.database().ref().child("object").child("name").set("Es un gay")}
 
   render() {
     return (
@@ -129,6 +153,11 @@ class App extends Component {
           <DataInput
             onAddRecord={this.addRecord.bind(this)}
             visible={this.state.dataInputOpen}
+          />
+          <RaisedButton
+            label="Escribir en la base de datos"
+            onClick={this.writeUserData('Dandiv')}
+            fullWidth={true}
           />
           <p>{this.state.name}</p>
         </div>

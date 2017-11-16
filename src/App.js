@@ -66,7 +66,8 @@ class App extends Component {
     this.state = {
       records: [],
       dataInputOpen: false,
-      name: 'Mauro'
+      name: 'Mauro',
+      user: null
     };
   }
 
@@ -99,7 +100,7 @@ class App extends Component {
     this.setState({dataInputOpen: false});
   }
 
-  componentWillMount() {
+  /* componentWillMount() {
    const nameRef = firebase.database().ref().child('object').child('name')
    console.log(nameRef);
    nameRef.on('value', (snapshot) => {
@@ -107,6 +108,12 @@ class App extends Component {
      name: snapshot.val()
     })
    })
+  } */
+
+  componentWillMount() {
+   firebase.auth().onAuthStateChanged(user => {
+    this.setState({user});
+   });
   }
 
   writeUserData(name) {
@@ -130,6 +137,43 @@ class App extends Component {
          age: 27
       }
    });
+  }
+
+  handleAuth() {
+   const provider = new firebase.auth.GoogleAuthProvider();
+   firebase.auth().signInWithPopup(provider)
+   .then(result => console.log('${result.user.email} ha iniciado sesión'))
+   .catch(error => console.log('Error ${error.code}: $(error.message)'));
+  }
+
+  handleLogout() {
+   firebase.auth().signOut()
+   .then(result => console.log('${result.user.email} ha salido'))
+   .catch(error => console.log('Error ${error.code}: $(error.message)'));
+  }
+
+  loginButton(){
+   if (this.state.user) {
+    return (
+     <div>
+      <img width="100" src={this.state.user.photoURL} alt={this.state.user.displayName} />
+      <p>Hola {this.state.user.displayName}!</p>
+      <button onClick={this.handleLogout}>Salir</button>
+      </div>
+    );
+   } else {
+    return (
+     <MuiThemeProvider>
+     <div>
+     <RaisedButton
+       label="Login"
+       onClick={this.handleAuth}
+       fullWidth={true}
+     />
+     </div>
+     </MuiThemeProvider>
+    )
+   }
   }
 
 // firebase.database().ref().child("object").child("name").set("Es un gay")}
@@ -159,6 +203,7 @@ class App extends Component {
             onClick={this.writeUserData('Dandiv')}
             fullWidth={true}
           />
+          {this.loginButton()}
           <p>{this.state.name}</p>
         </div>
       </MuiThemeProvider>

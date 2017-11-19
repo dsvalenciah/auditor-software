@@ -10,6 +10,10 @@ import _ from 'lodash';
 
 import FirebaseService from './services/firebase';
 
+import Avatar from 'material-ui/Avatar';
+
+import AppBar from 'material-ui/AppBar';
+
 class App extends Component {
   constructor() {
     super();
@@ -70,12 +74,13 @@ class App extends Component {
   loginButton(){
     if (this.state.user) {
       return (
-        <div>
-        <img width="100" src={this.state.user.photoURL} alt={this.state.user.displayName} />
-        <p>Hola {this.state.user.uid}!</p>
-        <button
-          onClick={this.firebaseService.handleLogout}
-        >Salir</button>
+       <div>
+       <AppBar
+         title={<center>"Hijodeputa"</center>}
+         iconClassNameRight="Holaaaaaaa"
+         iconElementRight={<Avatar src={this.state.user.photoURL} />}
+         />
+       <p>Hola {this.state.user.displayName}!</p>
         </div>
       );
     } else {

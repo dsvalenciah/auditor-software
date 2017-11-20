@@ -48,6 +48,12 @@ class FirebaseService {
     );
   }
 
+  getUserRecordFiles(userUid, recordUid, question, fileName, then) {
+    this.storage.refFromURL(
+      'gs://auditoria-e8b99.appspot.com/files/' + userUid + '/' + recordUid + '/' + question + '/' + fileName
+    ).getDownloadURL().then((url) => {then(url)});
+  }
+
   /* Modifiers */
   modifyUserRecord(userUid, recordUid, record) {
     this.database.ref(

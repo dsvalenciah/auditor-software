@@ -1,7 +1,16 @@
 import React, { Component } from 'react';
 
+import {grey900, grey500, blueGrey500, blueGrey700, blueGrey300} from 'material-ui/styles/colors';
+
+import Reorder from 'material-ui/svg-icons/action/reorder';
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
-import RaisedButton from 'material-ui/RaisedButton';
+import CircularProgress from 'material-ui/CircularProgress';
+import getMuiTheme from 'material-ui/styles/getMuiTheme';
+import IconButton from 'material-ui/IconButton';
+import IconMenu from 'material-ui/IconMenu';
+import MenuItem from 'material-ui/MenuItem';
+import AppBar from 'material-ui/AppBar';
+import Avatar from 'material-ui/Avatar';
 
 import DataInput from './components/DataInput';
 import RecordList from './components/RecordList';
@@ -10,9 +19,84 @@ import _ from 'lodash';
 
 import FirebaseService from './services/firebase';
 
-import Avatar from 'material-ui/Avatar';
+class Logged extends Component {
+  render() {
+    return (
+      <IconMenu
+        iconButtonElement={
+          <IconButton><Reorder /></IconButton>
+        }
+        targetOrigin={{horizontal: 'right', vertical: 'top'}}
+        anchorOrigin={{horizontal: 'right', vertical: 'top'}}
+      >
+        <MenuItem
+          primaryText="Sign out"
+          onClick={this.props.onSesionChange.bind(this)}
+        />
+        <MenuItem
+          primaryText="Añadir reporte"
+          onClick={this.props.onReportClick.bind(this)}
+        />
+      </IconMenu>
+    );
+  }
+}
 
-import AppBar from 'material-ui/AppBar';
+class Login extends Component {
+  render() {
+    return (
+      <IconMenu
+        iconButtonElement={
+          <IconButton><Reorder /></IconButton>
+        }
+        targetOrigin={{horizontal: 'right', vertical: 'top'}}
+        anchorOrigin={{horizontal: 'right', vertical: 'top'}}
+      >
+        <MenuItem primaryText="Log In" onClick={this.props.onSesionChange.bind(this)}/>
+      </IconMenu>
+    )
+  };
+}
+
+const muiTheme = getMuiTheme({
+  raisedButton: {
+    color: grey900,
+    textColor: blueGrey300,
+    primaryColor: grey900,
+    primaryTextColor: grey900,
+    secondaryColor: grey900,
+    secondaryTextColor: grey900,
+  },
+  radioButton: {
+    checkedColor: grey900,
+  },
+  palette: {
+    textColor: grey900,
+  },
+  appBar: {
+    height: 50,
+    color: blueGrey500
+  },
+  tableHeader: {
+    borderColor: grey900,
+  },
+  table: {
+    backgroundColor: blueGrey300,
+  },
+  tableHeaderColumn: {
+    textColor: grey900,
+  },
+  iconMenu: {
+    color: grey500,
+    backgroundColor: grey500,
+  },
+  textField: {
+    textColor: grey900,
+    hintColor: grey900,
+    floatingLabelColor: grey900,
+    focusColor: blueGrey500,
+  }
+});
 
 class App extends Component {
   constructor() {
@@ -22,22 +106,26 @@ class App extends Component {
       records: [],
       dataInputOpen: false,
       name: 'Mauro',
-      user: null
+      user: null,
+      refreshed: false
     };
   }
 
-  componentWillMount(){
-    if (this.user) {
+  getUserRecords() {
+    if (this.state.user) {
       this.firebaseService.getUserRecords(
-        (records) => {
+          this.state.user.uid,
+          (records) => {
           this.setState({
             records: _.filter(records, value => { return value; })
-          })
+          }, this.setState({refreshed: true}))
         }
       );
     }
+  }
 
-    this.firebaseService.getUser((user) => this.setState({user}));
+  componentWillMount(){
+    this.firebaseService.getUser((user) => this.setState({user}, () => {this.getUserRecords()}));
   }
 
   addRecord(record) {
@@ -71,60 +159,62 @@ class App extends Component {
     this.setState({dataInputOpen: false});
   }
 
+
   loginButton(){
-    if (this.state.user) {
-      return (
-       <div>
-       <AppBar
-         title={<center>"Hijodeputa"</center>}
-         iconClassNameRight="Holaaaaaaa"
-         iconElementRight={<Avatar src={this.state.user.photoURL} />}
-         />
-       <p>Hola {this.state.user.displayName}!</p>
-        </div>
-      );
-    } else {
-      return (
-        <div>
-        <RaisedButton
-          label="Login"
-          onClick={this.firebaseService.handleAuth}
-          fullWidth={true}
+    return (
+      <div>
+        <AppBar
+          title={this.state.user?this.state.user.displayName:<p></p>}
+          iconElementLeft={
+            this.state.user?(
+              <Avatar src={this.state.user.photoURL} />
+            ) : (
+              <p>Auditor Software</p>
+            )
+          }
+          iconElementRight={
+            this.state.user?(
+              <Logged
+                onSesionChange={this.firebaseService.handleLogout}
+                onReportClick={() => {this.setState({dataInputOpen: true});}}
+              />
+            ) : (
+              <Login onSesionChange={this.firebaseService.handleAuth}/>
+            )
+          }
         />
-        </div>
-      )
-    }
+      </div>
+    );
   }
 
   render() {
     return (
-      <MuiThemeProvider>
+      <MuiThemeProvider muiTheme={getMuiTheme(muiTheme)}>
         <div>
+          {this.loginButton()}
           {this.state.user?(
             <div>
-            <RecordList
-              records={this.state.records}
-              onDelete={this.deleteRecord.bind(this)}
-              onModify={this.modifyRecord.bind(this)}
-              user={this.state.user}
-            />
-            <center>
-              <RaisedButton
-                label="Añadir nuevo reporte"
-                onClick={() => {this.setState({dataInputOpen: true});}}
-                fullWidth={true}
+              <DataInput
+                onAddRecord={this.addRecord.bind(this)}
+                visible={this.state.dataInputOpen}
+                user={this.state.user}
               />
-            </center>
-            <DataInput
-              onAddRecord={this.addRecord.bind(this)}
-              visible={this.state.dataInputOpen}
-              user={this.state.user}
-            />
+              {this.state.refreshed?(
+                <RecordList
+                  records={this.state.records}
+                  onDelete={this.deleteRecord.bind(this)}
+                  onModify={this.modifyRecord.bind(this)}
+                  user={this.state.user}
+                />
+              ) : (
+              <div><center>
+                <CircularProgress size={50} thickness={5} color={blueGrey700}/>
+              </center></div>
+              )}
             </div>
           ) : (
            ""
           )}
-          {this.loginButton()}
         </div>
       </MuiThemeProvider>
     );

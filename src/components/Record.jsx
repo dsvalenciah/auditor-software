@@ -3,6 +3,7 @@ import React, { Component } from 'react';
 import IconButton from 'material-ui/IconButton';
 import SvgIcon from 'material-ui/SvgIcon';
 import { TableRow, TableRowColumn } from 'material-ui/Table';
+import {brown300, blueGrey300} from 'material-ui/styles/colors';
 
 import DataInput from './DataInput';
 
@@ -26,7 +27,7 @@ class Record extends Component {
 
   render () {
     return (
-      <TableRow>
+      <TableRow style={{background: this.props.record.complete?blueGrey300:brown300}}>
         <TableRowColumn>{this.props.record.name}</TableRowColumn>
         <TableRowColumn>{this.props.record.date}</TableRowColumn>
         <TableRowColumn>

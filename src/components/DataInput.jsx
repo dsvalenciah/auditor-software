@@ -1,12 +1,23 @@
 import React, { Component } from 'react';
 
-import {blueGrey500, blueGrey300, blueGrey400} from 'material-ui/styles/colors';
+import CheckCircle from 'material-ui/svg-icons/action/check-circle';
+import WarningIcon from 'material-ui/svg-icons/alert/warning';
+
+
+import {blueGrey500, blueGrey300, blueGrey400, brown300, blueGrey700} from 'material-ui/styles/colors';
 import RaisedButton from 'material-ui/RaisedButton';
 import RadioButton from 'material-ui/RadioButton';
+import FlatButton from 'material-ui/FlatButton';
 import TextField from 'material-ui/TextField';
 import Snackbar from 'material-ui/Snackbar';
 import Dialog from 'material-ui/Dialog';
 import Paper from 'material-ui/Paper';
+import {
+  Step,
+  Stepper,
+  StepButton,
+  StepContent,
+} from 'material-ui/Stepper';
 
 import _ from 'lodash';
 
@@ -35,6 +46,7 @@ class DataInput extends Component {
 
       snackBarOpen: false,
       snackBarMessage: "",
+      stepIndex: 0,
     };
   }
 
@@ -42,7 +54,7 @@ class DataInput extends Component {
     if (this.props.record !== undefined) {
       this.setState({
         questions: _.cloneDeep(this.props.record.questions),
-        questionsController: _.map(this.staticQuestionsPerArea, (question, area) => (
+        supportController: _.map(this.staticQuestionsPerArea, (question, area) => (
             {
               [area]: _.map(
                 question, (i, q) => ({[i]: false})
@@ -54,7 +66,8 @@ class DataInput extends Component {
         note: this.props.record.note,
         snackBarOpen: false,
         snackBarMessage: "",
-        fileInfo: null
+        fileInfo: null,
+        stepIndex: null,
       });
       this.mode = "modifier";
     } else {
@@ -66,7 +79,7 @@ class DataInput extends Component {
               )
             }
         )),
-        questionsController: _.map(this.staticQuestionsPerArea, (question, area) => (
+        supportController: _.map(this.staticQuestionsPerArea, (question, area) => (
             {
               [area]: _.map(
                 question, (i, q) => ({[i]: false})
@@ -78,7 +91,8 @@ class DataInput extends Component {
         note: "",
         snackBarOpen: false,
         snackBarMessage: "",
-        fileInfo: null
+        fileInfo: null,
+        stepIndex: null,
       });
       this.mode = "creator";
     }
@@ -102,14 +116,37 @@ class DataInput extends Component {
     return d+'/'+m+'/'+y+' - '+h+':'+mi+':'+s;
   }
 
+  isValidArea(index) {
+    let conditions = _.map(this.state.questions, (area, i) => (
+      _.map(area[Object.keys(area)[0]], (q, j) => (
+        q.response !== null && q.response !== undefined
+      )).indexOf(false) === -1
+    ));
+    return conditions[index];
+  }
+
+  isvalidQuestionArea(i, j) {
+    let conditions = _.map(this.state.questions, (area, i) => (
+      _.map(area[Object.keys(area)[0]], (q, j) => (
+        q.response !== null && q.response !== undefined
+      ))
+    ));
+    return conditions[i][j];
+  }
+
   handleClose = (response) => {
-    let conditions = _.map(this.state.questions, q => (q.response !== null));
+    let conditions = _.map(this.state.questions, (area, i) => (
+      _.map(area[Object.keys(area)[0]], (q, j) => (
+        q.response !== null && q.response !== undefined
+      )).indexOf(false) === -1
+    ));
+
     conditions.push(this.state.name.length > 0);
 
-    if (response && conditions.indexOf(false) === -1) {
+    if (response) {
       // Save other input
-
       const record = {
+        "complete": conditions.indexOf(false) === -1,
         "questions": this.state.questions.slice(),
         "name": this.state.name,
         "uid": this.state.uid,
@@ -124,17 +161,13 @@ class DataInput extends Component {
       }
       this.uploadNow();
     } else {
-      if (response) {
-        this.setState({snackBarOpen: true, snackBarMessage: "Le faltan datos"});
+      if (this.props.record) {
+        this.setState({questions: _.cloneDeep(this.props.record.questions)});
+      }
+      if (this.mode === "creator") {
+        this.props.onAddRecord(null);
       } else {
-        if (this.props.record) {
-          this.setState({questions: _.cloneDeep(this.props.record.questions)});
-        }
-        if (this.mode === "creator") {
-          this.props.onAddRecord(null);
-        } else {
-          this.props.onModify(null);
-        }
+        this.props.onModify(null);
       }
     }
   };
@@ -160,11 +193,11 @@ class DataInput extends Component {
   }
 
   handleQuestionSupportVisible(event, i, area, j, question) {
-    let questionsControllerTemp = this.state.questionsController;
-    questionsControllerTemp[i][area][j][question] = !(
-      questionsControllerTemp[i][area][j][question]
+    let supportControllerTemp = this.state.supportController;
+    supportControllerTemp[i][area][j][question] = !(
+      supportControllerTemp[i][area][j][question]
     );
-    this.setState({questionsController: questionsControllerTemp});
+    this.setState({supportController: supportControllerTemp});
   }
 
   handleQuestionSupportChange(note, i, area, j) {
@@ -201,6 +234,42 @@ class DataInput extends Component {
     }
   }
 
+  handleNext = () => {
+    const {stepIndex} = this.state;
+    if (stepIndex < 7) {
+      this.setState({stepIndex: stepIndex + 1});
+    }
+  };
+
+  handlePrev = () => {
+    const {stepIndex} = this.state;
+    if (stepIndex > 0) {
+      this.setState({stepIndex: stepIndex - 1});
+    }
+  };
+
+  renderStepActions(step) {
+    return (
+      <div style={{margin: '12px 0'}}>
+        <RaisedButton
+          label="Next"
+          disableTouchRipple={true}
+          disableFocusRipple={true}
+          primary={true}
+          onClick={this.handleNext}
+        />
+        {step > 0 && (
+          <FlatButton
+            label="Back"
+            disableTouchRipple={true}
+            disableFocusRipple={true}
+            onClick={this.handlePrev}
+          />
+        )}
+      </div>
+    );
+  }
+
   render() {
     const actions = [
       <RaisedButton
@@ -214,35 +283,56 @@ class DataInput extends Component {
     ];
 
     return (
-      <div>
-        <Dialog
-          title="Reporte de no conformidad"
-          actions={actions}
-          modal={false}
-          open={this.props.visible}
-          onRequestClose={this.handleClose}
-          autoScrollBodyContent={true}
-          bodyStyle={{background: blueGrey300}}
-          titleStyle={{background: blueGrey500}}
-        > 
-          <div>
-            <TextField
-              hintText="Escriba aquí el nombre del reporte"
-              floatingLabelText="Nombre"
-              fullWidth={true}
-              onChange={this.handleNameFieldChange.bind(this)}
-              defaultValue={this.state.name}
-              errorText={this.state.nameFieldError}
-            />
-            {
-              _.map(this.state.questions, (area, i) => (
-                <div key={i}>
-                <br />
-                <Paper style={{background: blueGrey400, padding: 10, margin: 10}}>
+      <Dialog
+        title="Reporte de no conformidad"
+        actions={actions}
+        modal={false}
+        open={this.props.visible}
+        onRequestClose={this.handleClose}
+        autoScrollBodyContent={true}
+        bodyStyle={{background: blueGrey300}}
+        titleStyle={{background: blueGrey500}}
+        actionsContainerStyle={{background: blueGrey500}}
+      > 
+        <div>
+          <TextField
+            hintText="Escriba aquí el nombre del reporte"
+            floatingLabelText="Nombre"
+            fullWidth={true}
+            onChange={this.handleNameFieldChange.bind(this)}
+            defaultValue={this.state.name}
+            errorText={this.state.nameFieldError}
+          />
+          <Stepper
+            activeStep={this.state.stepIndex}
+            linear={false}
+            orientation="vertical"
+          >
+          {
+            _.map(this.state.questions, (area, i) => (
+              <Step key={i}>
+                <StepButton onClick={() => this.setState({
+                    stepIndex: this.state.stepIndex!=null?(
+                      this.state.stepIndex!==i?i:null
+                    ) : (
+                      i
+                  )})}
+                  icon={this.isValidArea(i)?(
+                    <CheckCircle color={blueGrey700} />
+                  ) : (
+                    <WarningIcon color={brown300} />
+                  )}
+                >
                   <b><big>{Object.keys(area)[0]}</big></b>
+                </StepButton>
+                <StepContent>
                   {
                     _.map(area[Object.keys(area)[0]], (q, j) => (
-                      <Paper key={j} zDepth={3} style={{background: blueGrey400}}>
+                      <Paper
+                        key={j}
+                        zDepth={3}
+                        style={{background: this.isvalidQuestionArea(i, j)?blueGrey400:brown300}}
+                      >
                         <div style={{margin: 10, padding: 10}}>
                           <p>{q.question}</p>
                           <div style={{display: 'flex'}}>
@@ -294,7 +384,7 @@ class DataInput extends Component {
                                 this.onFileUpload(this, i, Object.keys(area)[0], j, fileName)
                               }}
                               visible={
-                                this.state.questionsController[i][Object.keys(area)[0]][j][q.question]
+                                this.state.supportController[i][Object.keys(area)[0]][j][q.question]
                               }
                               onChange={(note) => {this.handleQuestionSupportChange(
                                 note, i, Object.keys(area)[0], j
@@ -305,27 +395,27 @@ class DataInput extends Component {
                       </Paper>
                     ))
                   }
-                </Paper>
-                </div>
-              ))
-            }
-            <TextField
-              hintText="Escriba aquí una nota si desea"
-              floatingLabelText="Notas"
-              defaultValue={this.state.note}
-              onChange={this.handleNoteFieldChange.bind(this)}
-              fullWidth={true}
-              multiLine={true}
-            />
-            <Snackbar
-              open={this.state.snackBarOpen}
-              message={this.state.snackBarMessage}
-              onRequestClose={this.handleSnackBarClose.bind(this)}
-              autoHideDuration={2000}
-            />
-          </div>
-        </Dialog>
-      </div>
+                </StepContent>
+              </Step>
+            ))
+          }
+          </Stepper>
+          <TextField
+            hintText="Escriba aquí una nota si desea"
+            floatingLabelText="Notas"
+            defaultValue={this.state.note}
+            onChange={this.handleNoteFieldChange.bind(this)}
+            fullWidth={true}
+            multiLine={true}
+          />
+        </div>
+        <Snackbar
+          open={this.state.snackBarOpen}
+          message={this.state.snackBarMessage}
+          onRequestClose={this.handleSnackBarClose.bind(this)}
+          autoHideDuration={2000}
+        />
+      </Dialog>
     );
   }
 }

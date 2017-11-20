@@ -1,10 +1,12 @@
 import React, { Component } from 'react';
 
+import {blueGrey500, blueGrey300, blueGrey400} from 'material-ui/styles/colors';
+import RaisedButton from 'material-ui/RaisedButton';
 import RadioButton from 'material-ui/RadioButton';
-import FlatButton from 'material-ui/FlatButton';
 import TextField from 'material-ui/TextField';
 import Snackbar from 'material-ui/Snackbar';
 import Dialog from 'material-ui/Dialog';
+import Paper from 'material-ui/Paper';
 
 import _ from 'lodash';
 
@@ -13,15 +15,6 @@ import uuidv4 from 'uuid/v4';
 import FirebaseService from '../services/firebase';
 
 import RecordSupport from './RecordSupport'
-
-const styles = {
-  block2: {
-    margin: 10,
-  },
-  question: {
-    paddingLeft: "4em"
-  }
-}
 
 class DataInput extends Component {
   constructor(props) {
@@ -48,7 +41,7 @@ class DataInput extends Component {
   componentWillReceiveProps(nextProps) {
     if (this.props.record !== undefined) {
       this.setState({
-        questions: this.props.record.questions,
+        questions: _.cloneDeep(this.props.record.questions),
         questionsController: _.map(this.staticQuestionsPerArea, (question, area) => (
             {
               [area]: _.map(
@@ -61,6 +54,7 @@ class DataInput extends Component {
         note: this.props.record.note,
         snackBarOpen: false,
         snackBarMessage: "",
+        fileInfo: null
       });
       this.mode = "modifier";
     } else {
@@ -68,7 +62,7 @@ class DataInput extends Component {
         questions: _.map(this.staticQuestionsPerArea, (question, area) => (
             {
               [area]: _.map(
-                question, (i, q) => ({"question": i, "response": null, "note": null})
+                question, (i, q) => ({"question": i, "response": null, "note": null, "files": {}})
               )
             }
         )),
@@ -84,6 +78,7 @@ class DataInput extends Component {
         note: "",
         snackBarOpen: false,
         snackBarMessage: "",
+        fileInfo: null
       });
       this.mode = "creator";
     }
@@ -127,10 +122,14 @@ class DataInput extends Component {
       } else {
         this.props.onModify(record);
       }
+      this.uploadNow();
     } else {
       if (response) {
         this.setState({snackBarOpen: true, snackBarMessage: "Le faltan datos"});
       } else {
+        if (this.props.record) {
+          this.setState({questions: _.cloneDeep(this.props.record.questions)});
+        }
         if (this.mode === "creator") {
           this.props.onAddRecord(null);
         } else {
@@ -174,13 +173,41 @@ class DataInput extends Component {
     this.setState({questions: questionTemp});
   }
 
+  handleSnackBarClose() {
+    this.setState({
+      snackBarOpen: false,
+      snackBarMessage: ""
+    });
+  }
+
+  onFileUpload(event, i, area, j, fileInfo){
+    let questionTemp = this.state.questions;
+    if (questionTemp[i][area][j].files === undefined) {
+      questionTemp[i][area][j]["files"] = {};
+    }
+    let filesLength = Object.keys(questionTemp[i][area][j].files).length;
+    questionTemp[i][area][j].files[filesLength] = fileInfo.file.name;
+    this.setState({questions: questionTemp, fileInfo: fileInfo});
+  }
+
+  uploadNow(){
+    if (this.state.fileInfo){
+      this.firebase.setUserRecordFile(
+        this.state.fileInfo.userUid,
+        this.state.fileInfo.recordUid,
+        this.state.fileInfo.question,
+        this.state.fileInfo.file
+      );
+    }
+  }
+
   render() {
     const actions = [
-      <FlatButton
+      <RaisedButton
         label="Cancel"
         onClick={this.handleClose.bind(this, false)}
       />,
-      <FlatButton
+      <RaisedButton
         label="Ok"
         onClick={this.handleClose.bind(this, true)}
       />,
@@ -195,7 +222,9 @@ class DataInput extends Component {
           open={this.props.visible}
           onRequestClose={this.handleClose}
           autoScrollBodyContent={true}
-        >
+          bodyStyle={{background: blueGrey300}}
+          titleStyle={{background: blueGrey500}}
+        > 
           <div>
             <TextField
               hintText="Escriba aquí el nombre del reporte"
@@ -208,12 +237,15 @@ class DataInput extends Component {
             {
               _.map(this.state.questions, (area, i) => (
                 <div key={i}>
-                  <p>{Object.keys(area)[0]}</p>
+                <br />
+                <Paper style={{background: blueGrey400, padding: 10, margin: 10}}>
+                  <b><big>{Object.keys(area)[0]}</big></b>
                   {
                     _.map(area[Object.keys(area)[0]], (q, j) => (
-                        <div key={j} style={styles.question}>
+                      <Paper key={j} zDepth={3} style={{background: blueGrey400}}>
+                        <div style={{margin: 10, padding: 10}}>
                           <p>{q.question}</p>
-                          <div style={styles.block2}>
+                          <div style={{display: 'flex'}}>
                             <RadioButton
                               onClick={
                                 this.hanldeCheck.bind(
@@ -232,31 +264,48 @@ class DataInput extends Component {
                               label="No"
                               checked={q.response === "No"}
                             />
-                          </div>
-                          <FlatButton
-                            label="Soportes"
-                            onClick={
-                              () => {this.handleQuestionSupportVisible(
-                                this, i, Object.keys(area)[0], j, q.question
-                              )}
-                            }
-                          />
-                          <RecordSupport
-                            key={i + " " + j}
-                            user={this.props.user}
-                            recordUid={this.state.uid}
-                            questionName={q.question}
-                            defaultNote={q.note}
-                            visible={
-                              this.state.questionsController[i][Object.keys(area)[0]][j][q.question]
-                            }
-                            onChange={(note) => {this.handleQuestionSupportChange(
-                              note, i, Object.keys(area)[0], j
-                            )}}
-                          />
+                            <RadioButton
+                              onClick={
+                                this.hanldeCheck.bind(
+                                  this, "N/A", i, Object.keys(area)[0], j
+                                )
+                              }
+                              label="N/A"
+                              checked={q.response === "N/A"}
+                            />
+                            </div>
                         </div>
+                        <center><RaisedButton
+                          label="Evidencias"
+                          onClick={
+                            () => {this.handleQuestionSupportVisible(
+                              this, i, Object.keys(area)[0], j, q.question
+                            )}
+                          }
+                        /></center>
+                        <div style={{padding: 10}}>
+                          <Paper zDepth={1}>
+                            <RecordSupport
+                              key={i + " " + j}
+                              user={this.props.user}
+                              recordUid={this.state.uid}
+                              question={q}
+                              onFileUpload={(fileName) => {
+                                this.onFileUpload(this, i, Object.keys(area)[0], j, fileName)
+                              }}
+                              visible={
+                                this.state.questionsController[i][Object.keys(area)[0]][j][q.question]
+                              }
+                              onChange={(note) => {this.handleQuestionSupportChange(
+                                note, i, Object.keys(area)[0], j
+                              )}}
+                            />
+                          </Paper>
+                        </div>
+                      </Paper>
                     ))
                   }
+                </Paper>
                 </div>
               ))
             }
@@ -271,6 +320,7 @@ class DataInput extends Component {
             <Snackbar
               open={this.state.snackBarOpen}
               message={this.state.snackBarMessage}
+              onRequestClose={this.handleSnackBarClose.bind(this)}
               autoHideDuration={2000}
             />
           </div>

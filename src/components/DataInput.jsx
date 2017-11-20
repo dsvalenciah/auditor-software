@@ -9,7 +9,6 @@ import RaisedButton from 'material-ui/RaisedButton';
 import RadioButton from 'material-ui/RadioButton';
 import FlatButton from 'material-ui/FlatButton';
 import TextField from 'material-ui/TextField';
-import Snackbar from 'material-ui/Snackbar';
 import Dialog from 'material-ui/Dialog';
 import Paper from 'material-ui/Paper';
 import {
@@ -44,8 +43,6 @@ class DataInput extends Component {
       uid: null,
       note: null,
 
-      snackBarOpen: false,
-      snackBarMessage: "",
       stepIndex: 0,
     };
   }
@@ -64,8 +61,6 @@ class DataInput extends Component {
         name: this.props.record.name,
         uid: this.props.record.uid,
         note: this.props.record.note,
-        snackBarOpen: false,
-        snackBarMessage: "",
         fileInfo: null,
         stepIndex: null,
       });
@@ -89,8 +84,6 @@ class DataInput extends Component {
         name: "",
         uid: uuidv4(),
         note: "",
-        snackBarOpen: false,
-        snackBarMessage: "",
         fileInfo: null,
         stepIndex: null,
       });
@@ -206,13 +199,6 @@ class DataInput extends Component {
     this.setState({questions: questionTemp});
   }
 
-  handleSnackBarClose() {
-    this.setState({
-      snackBarOpen: false,
-      snackBarMessage: ""
-    });
-  }
-
   onFileUpload(event, i, area, j, fileInfo){
     let questionTemp = this.state.questions;
     if (questionTemp[i][area][j].files === undefined) {
@@ -325,7 +311,10 @@ class DataInput extends Component {
                 >
                   <b><big>{Object.keys(area)[0]}</big></b>
                 </StepButton>
-                <StepContent>
+                <StepContent
+                  transitionDuration={0}
+                >
+                  <br />
                   {
                     _.map(area[Object.keys(area)[0]], (q, j) => (
                       <Paper
@@ -409,12 +398,6 @@ class DataInput extends Component {
             multiLine={true}
           />
         </div>
-        <Snackbar
-          open={this.state.snackBarOpen}
-          message={this.state.snackBarMessage}
-          onRequestClose={this.handleSnackBarClose.bind(this)}
-          autoHideDuration={2000}
-        />
       </Dialog>
     );
   }

@@ -259,7 +259,7 @@ class DataInput extends Component {
   render() {
     const actions = [
       <RaisedButton
-        label="Cancel"
+        label="Cancelar"
         onClick={this.handleClose.bind(this, false)}
       />,
       <RaisedButton
@@ -279,7 +279,7 @@ class DataInput extends Component {
         bodyStyle={{background: blueGrey300}}
         titleStyle={{background: blueGrey500}}
         actionsContainerStyle={{background: blueGrey500}}
-      > 
+      >
         <div>
           <TextField
             hintText="Escriba aquí el nombre del reporte"
@@ -324,7 +324,7 @@ class DataInput extends Component {
                       >
                         <div style={{margin: 10, padding: 10}}>
                           <p>{q.question}</p>
-                          <div style={{display: 'flex'}}>
+                          <div>
                             <RadioButton
                               onClick={
                                 this.hanldeCheck.bind(
